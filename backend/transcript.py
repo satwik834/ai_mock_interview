@@ -1,34 +1,35 @@
-import whisper
+import whisper_timestamped
 
-def transcribe_with_timestamps(audio_path, model_size="base"):
+def transcribe_with_words_and_sentences(audio_path, model_size="base"):
     """
-    Transcribes audio using Whisper with word-level timestamps
-    and returns sentence-level and word-level transcripts.
+    Transcribes audio using whisper-timestamped with word-level timestamps
+    and generates sentence-level timestamps automatically.
+    Returns both word-level and sentence-level transcripts.
     """
     # Load model
-    model = whisper.load_model(model_size)
+    model = whisper_timestamped.load_model(model_size)
 
     # Transcribe with word-level timestamps
     result = model.transcribe(audio_path, word_timestamps=True)
 
-    word_level = []       # Each word with its start and end time
-    sentence_level = []   # Each sentence with start, end, and text
-
+    word_level = []
+    sentence_level = []
     current_sentence = []
+
     for segment in result["segments"]:
         for word_info in segment.get("words", []):
-            # Add word to word-level list
+            # Word-level transcript
             word_level.append({
-                "word": word_info["text"],
+                "word": word_info["word"],
                 "start": word_info["start"],
                 "end": word_info["end"]
             })
 
             # Build sentences
             current_sentence.append(word_info)
-            if word_info["text"].endswith(('.', '?', '!')):
-                # End of sentence
-                sentence_text = ' '.join(w['text'] for w in current_sentence)
+            # Check for sentence-ending punctuation
+            if word_info["word"].endswith(('.', '?', '!')):
+                sentence_text = ' '.join(w['word'] for w in current_sentence)
                 sentence_level.append({
                     "text": sentence_text,
                     "start": current_sentence[0]["start"],
@@ -38,7 +39,7 @@ def transcribe_with_timestamps(audio_path, model_size="base"):
 
     # Handle any remaining words as last sentence
     if current_sentence:
-        sentence_text = ' '.join(w['text'] for w in current_sentence)
+        sentence_text = ' '.join(w['word'] for w in current_sentence)
         sentence_level.append({
             "text": sentence_text,
             "start": current_sentence[0]["start"],
@@ -59,6 +60,6 @@ def transcribe_with_timestamps(audio_path, model_size="base"):
 
 
 # Example usage
-audio_file = "test.mp3"
-words, sentences = transcribe_with_timestamps(audio_file)
-print("Transcription completed!")
+audio_file = "./test.mp3"
+words, sentences = transcribe_with_words_and_sentences(audio_file)
+print("Transcription with word and sentence timestamps completed!")
